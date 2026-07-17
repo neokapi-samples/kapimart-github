@@ -1,0 +1,21 @@
+# kapi project recipe for KapiMart.
+#
+# Content = the localization catalogs kapi-react extracts from the React
+# source (i18n/**/*.klf). kapi translates them into a sibling i18n-<lang>/
+# tree; `kapi-react compile` then turns those into the runtime catalogs the
+# app loads (public/translations/<lang>.json).
+#
+# The source of truth is the React source; the catalogs are generated. Run
+# `npm run i18n:extract` after changing UI copy, then let the pipeline
+# translate.
+version: v1
+name: kapimart
+defaults:
+  source_language: en
+  target_languages: [fr, de, ja, nb]
+  brand_voice:
+    profile_file: l10n/brand-voice.yaml
+  termbase_source: l10n/glossary.csv
+content:
+  - path: i18n/**/*.klf
+    target: i18n-{lang}/{path}.klf

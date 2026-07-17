@@ -1,0 +1,106 @@
+name: Localize
+
+# The localization pipeline, dogfooding the kapi GitHub tooling
+# (neokapi/setup-kapi + neokapi/kapi-action). Three ways in:
+#
+#   * pull_request → the source gate: check the English copy against the brand
+#     voice before it is ever translated ("keep source on brand"). Keyless.
+#   * schedule / manual (pseudo) → refresh the pseudo-locale and open a PR.
+#     Keyless, free, deterministic — the always-on "watch the pipeline" run.
+#   * manual (ai) → translate into the real languages with an AI provider and
+#     open a PR you review before merging. Needs ANTHROPIC_API_KEY.
+#
+# Every run first re-extracts the catalogs from the React source with
+# kapi-react, so the pipeline always reflects the current UI copy.
+
+on:
+  pull_request:
+    paths: ["src/**", "l10n/**"]
+  schedule:
+    - cron: "23 4 * * *" # nightly, keyless
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "pseudo (keyless) or ai (real languages, needs a key)"
+        type: choice
+        options: [pseudo, ai]
+        default: pseudo
+
+env:
+  KAPI_VERSION: "1.2.0-rc11" # first release with `kapi up` / `check`
+
+jobs:
+  # PR gate: is the English source on brand?
+  gate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci
+      - run: npm run i18n:extract
+      - uses: neokapi/setup-kapi@v1
+        with: { version: "1.2.0-rc11", plugins: "" }
+      - uses: neokapi/kapi-action@v1
+        with:
+          command: check
+          args: "i18n/src/App.klf --profile-file l10n/brand-voice.yaml"
+          commit: "false"
+          pr-comment: "true"
+
+  # Keyless: refresh the pseudo-locale, open a PR.
+  pseudo:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pseudo')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci
+      - run: npm run i18n:extract
+      - uses: neokapi/setup-kapi@v1
+        with: { version: "1.2.0-rc11", plugins: "" }
+      - uses: neokapi/kapi-action@v1
+        with:
+          command: pseudo-translate
+          args: "i18n --target-lang qps -o i18n-qps"
+          create-pull-request: "true"
+          pr-title: "chore: refresh pseudo-localization"
+          pr-labels: "localization,pseudo"
+          branch-prefix: "kapi/pseudo"
+
+  # Real languages: translate with an AI provider, open a PR to review.
+  ai:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'ai'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci
+      - run: npm run i18n:extract
+      - uses: neokapi/setup-kapi@v1
+        with: { version: "1.2.0-rc11", plugins: "" }
+      - uses: neokapi/kapi-action@v1
+        env:
+          # kapi reads the provider key from the conventional env var and the
+          # default provider from KAPI_AI_PROVIDER (KAPI_-prefixed app config).
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          KAPI_AI_PROVIDER: gemini
+        with:
+          command: up
+          project: "kapimart.kapi"
+          create-pull-request: "true"
+          pr-title: "chore: update translations"
+          pr-labels: "localization"
+          branch-prefix: "kapi/translate"

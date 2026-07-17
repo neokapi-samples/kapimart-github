@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNeokapi } from "@neokapi/kapi-react/runtime";
 import { PRODUCTS } from "./data";
+import { applyLocale, LOCALES, setLocale, storedLocale, type Locale } from "./i18n";
 
 type Tab = "home" | "products" | "cart" | "checkout" | "account";
 
@@ -7,6 +9,20 @@ export function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [cart, setCart] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [locale, setLocaleState] = useState<Locale>(() => storedLocale());
+
+  // Subscribe the tree to the kapi-react translation store so every string
+  // re-renders when the active catalog changes, and load the stored locale on
+  // mount (English is the source, so the default case loads nothing).
+  useNeokapi();
+  useEffect(() => {
+    void applyLocale(storedLocale());
+  }, []);
+
+  const changeLocale = (next: Locale) => {
+    setLocaleState(next);
+    void setLocale(next);
+  };
 
   const add = (id: string) => setCart((c) => [...c, id]);
   const removeAt = (index: number) => setCart((c) => c.filter((_, i) => i !== index));
@@ -39,6 +55,19 @@ export function App() {
             Account
           </button>
         </nav>
+        <select
+          className="lang"
+          value={locale}
+          onChange={(e) => changeLocale(e.target.value as Locale)}
+          aria-label="Language"
+          translate="no"
+        >
+          {LOCALES.map((l) => (
+            <option key={l.value} value={l.value}>
+              {l.label}
+            </option>
+          ))}
+        </select>
       </header>
 
       <main>
