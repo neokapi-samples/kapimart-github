@@ -15,7 +15,7 @@ The three commits are the whole story:
 1. **Scaffold** — a vanilla `npm create vite` React + TypeScript app.
 2. **KapiMart storefront** — a small store (home, products, cart, checkout,
    account) written in plain English. No localization yet.
-3. **Add localization** — kapi-react, a `.kapi` recipe, and the CI pipeline.
+3. **Add localization** — kapi-react, a `kapi.yaml` recipe, and the CI pipeline.
    This is the only commit that adds i18n. Diff it to see exactly what it takes.
 
 ## How it works
