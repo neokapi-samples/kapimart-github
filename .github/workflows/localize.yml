@@ -27,7 +27,7 @@ on:
         default: pseudo
 
 env:
-  KAPI_VERSION: "1.2.0" # first release with `kapi up` / `check`
+  KAPI_VERSION: "1.2.0-rc14" # first release with `kapi up` / `check`
 
 jobs:
   # PR gate: is the English source on brand?
@@ -44,7 +44,7 @@ jobs:
       - run: npm ci
       - run: npm run i18n:extract
       - uses: neokapi/setup-kapi@v1
-        with: { version: "1.2.0", plugins: "" }
+        with: { version: "1.2.0-rc14", plugins: "" }
       - uses: neokapi/kapi-action@v1
         with:
           command: check
@@ -66,7 +66,7 @@ jobs:
       - run: npm ci
       - run: npm run i18n:extract
       - uses: neokapi/setup-kapi@v1
-        with: { version: "1.2.0", plugins: "" }
+        with: { version: "1.2.0-rc14", plugins: "" }
       - uses: neokapi/kapi-action@v1
         with:
           command: pseudo-translate
@@ -90,7 +90,7 @@ jobs:
       - run: npm ci
       - run: npm run i18n:extract
       - uses: neokapi/setup-kapi@v1
-        with: { version: "1.2.0", plugins: "" }
+        with: { version: "1.2.0-rc14", plugins: "" }
       - uses: neokapi/kapi-action@v1
         env:
           # kapi reads the provider key from the conventional env var and the
