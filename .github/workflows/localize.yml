@@ -11,11 +11,11 @@ name: Localize
 #     open a PR you review before merging. Needs ANTHROPIC_API_KEY.
 #
 # Every run first re-extracts the catalogs from the React source with
-# kapi-react, so the pipeline always reflects the current UI copy.
+# neokapi-i18n, so the pipeline always reflects the current UI copy.
 
 on:
   pull_request:
-    paths: ["src/**", "l10n/**"]
+    paths: ["src/**", "i18n/**"]
   schedule:
     - cron: "23 4 * * *" # nightly, keyless
   workflow_dispatch:
@@ -48,7 +48,7 @@ jobs:
       - uses: neokapi/kapi-action@v1
         with:
           command: check
-          args: "i18n/src/App.klf --profile-file l10n/brand-voice.yaml"
+          args: "i18n/src/App.klf --profile-file i18n/brand-voice.yaml"
           commit: "false"
           pr-comment: "true"
 
@@ -70,7 +70,7 @@ jobs:
       - uses: neokapi/kapi-action@v1
         with:
           command: pseudo-translate
-          args: "i18n --target-lang qps -o i18n-qps"
+          args: "i18n/src --target-lang qps -o i18n/qps"
           create-pull-request: "true"
           pr-title: "chore: refresh pseudo-localization"
           pr-labels: "localization,pseudo"
