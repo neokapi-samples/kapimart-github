@@ -1,36 +1,31 @@
 name: Localize
 
 # The localization pipeline, dogfooding the kapi GitHub tooling
-# (neokapi/setup-kapi + neokapi/kapi-action). Three ways in:
+# (neokapi/setup-kapi + neokapi/kapi-action). Two ways in:
 #
 #   * pull_request → the source gate: check the English copy against the brand
-#     voice before it is ever translated ("keep source on brand"). Keyless.
-#   * schedule / manual (pseudo) → refresh the pseudo-locale and open a PR.
-#     Keyless, free, deterministic — the always-on "watch the pipeline" run.
+#     voice before it is ever translated ("keep source on brand"), and lint the
+#     React source for i18n anti-patterns. Keyless.
 #   * manual (ai) → translate into the real languages with an AI provider and
-#     open a PR you review before merging. Needs ANTHROPIC_API_KEY.
+#     open a PR you review before merging. Needs an provider key.
 #
 # Every run first re-extracts the catalogs from the React source with
 # neokapi-i18n, so the pipeline always reflects the current UI copy.
+#
+# Pseudo-localization is no longer a CI step or a static `qps` catalog: it is a
+# dev-only runtime toggle in the app (setPseudoMode), surfaced as "Pseudo
+# English" in the language picker. Nothing to extract, translate, or deploy.
 
 on:
   pull_request:
     paths: ["src/**", "i18n/**"]
-  schedule:
-    - cron: "23 4 * * *" # nightly, keyless
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "pseudo (keyless) or ai (real languages, needs a key)"
-        type: choice
-        options: [pseudo, ai]
-        default: pseudo
 
 env:
-  KAPI_VERSION: "1.2.0-rc14" # first release with `kapi up` / `check`
+  KAPI_VERSION: "1.2.0-rc15" # `kapi up` / `check` / `status --ship`
 
 jobs:
-  # PR gate: is the English source on brand?
+  # PR gate: is the English source on brand, and free of i18n anti-patterns?
   gate:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -40,11 +35,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "22" }
+        with: { node-version: "24" }
       - run: npm ci
+      # Lint the React source with oxlint, including the neokapi-i18n rules
+      # (@neokapi/i18n-react-lint) that catch un-extractable strings.
+      - run: npm run lint
       - run: npm run i18n:extract
       - uses: neokapi/setup-kapi@v1
-        with: { version: "1.2.0-rc14", plugins: "" }
+        with: { version: "1.2.0-rc15", plugins: "" }
       - uses: neokapi/kapi-action@v1
         with:
           command: check
@@ -52,33 +50,9 @@ jobs:
           commit: "false"
           pr-comment: "true"
 
-  # Keyless: refresh the pseudo-locale, open a PR.
-  pseudo:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'pseudo')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: "22" }
-      - run: npm ci
-      - run: npm run i18n:extract
-      - uses: neokapi/setup-kapi@v1
-        with: { version: "1.2.0-rc14", plugins: "" }
-      - uses: neokapi/kapi-action@v1
-        with:
-          command: pseudo-translate
-          args: "i18n/src --target-lang qps -o i18n/qps"
-          create-pull-request: "true"
-          pr-title: "chore: refresh pseudo-localization"
-          pr-labels: "localization,pseudo"
-          branch-prefix: "kapi/pseudo"
-
   # Real languages: translate with an AI provider, open a PR to review.
   ai:
-    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'ai'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -86,11 +60,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "22" }
+        with: { node-version: "24" }
       - run: npm ci
       - run: npm run i18n:extract
       - uses: neokapi/setup-kapi@v1
-        with: { version: "1.2.0-rc14", plugins: "" }
+        with: { version: "1.2.0-rc15", plugins: "" }
       - uses: neokapi/kapi-action@v1
         env:
           # kapi reads the provider key from the conventional env var and the

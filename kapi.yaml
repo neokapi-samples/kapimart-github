@@ -19,3 +19,15 @@ defaults:
 content:
   - path: i18n/src/**/*.klf
     target: i18n/{lang}/{path}.klf
+# Two-gate ship model. The default `ship` gate decides whether a locale is
+# offered in the picker at all; the named `verified` gate marks a locale as
+# human-reviewed (no "AI" badge). Flagship locales (fr, de) are held to the
+# verified gate, so they show as verified once reviewed and as AI otherwise —
+# the picker demonstrates both states side by side.
+gates:
+  verified:
+    reviewed: 25
+verified_gates:
+  - when:
+      locales: [fr, de]
+    gate: verified
