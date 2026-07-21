@@ -15,7 +15,7 @@ The three commits are the whole story:
 1. **Scaffold** — a vanilla `npm create vite` React + TypeScript app.
 2. **KapiMart storefront** — a small store (home, products, cart, checkout,
    account) written in plain English. No localization yet.
-3. **Add localization** — kapi-react, a `kapi.yaml` recipe, and the CI pipeline.
+3. **Add localization** — neokapi-i18n, a `kapi.yaml` recipe, and the CI pipeline.
    This is the only commit that adds i18n. Diff it to see exactly what it takes.
 
 ## How it works
@@ -26,14 +26,14 @@ You write natural English in your components — no message keys, no `t()` calls
 <button className="cta">Browse products</button>
 ```
 
-The [kapi-react](https://www.npmjs.com/package/@neokapi/kapi-react) Vite plugin
+The [neokapi-i18n](https://www.npmjs.com/package/@neokapi/i18n-react) Vite plugin
 instruments those strings at build time, and its CLI extracts them into
 translation catalogs. The pipeline then:
 
 ```
-kapi-react extract   src/**/*.tsx   → i18n/**/*.klf              (source catalog)
-kapi (in CI)         i18n/          → i18n-<lang>/                (translated)
-kapi-react compile   i18n-<lang>/   → public/translations/<lang>.json
+neokapi-i18n extract   src/**/*.tsx   → i18n/src/**/*.klf              (source catalog)
+kapi (in CI)         i18n/          → i18n/<lang>/                (translated)
+neokapi-i18n compile   i18n/<lang>/   → public/translations/<lang>.json
 vite build           → the static site → GitHub Pages
 ```
 
@@ -77,5 +77,5 @@ above, or run `kapi` yourself with the [CLI](https://github.com/neokapi/neokapi)
 ## Use this yourself
 
 This repo is a template — click **Use this template**, or copy the
-`localize.yml` / `pages.yml` workflows and the `kapi-react` wiring into your own
+`localize.yml` / `pages.yml` workflows and the `neokapi-i18n` wiring into your own
 Vite + React app.
